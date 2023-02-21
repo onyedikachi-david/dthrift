@@ -30,6 +30,7 @@
 
 use concordium_std::*;
 use core::fmt::Debug;
+use std::collections::BTreeSet;
 
 #[derive(Serialize, SchemaType, Clone, Copy, Debug)]
 pub enum TandaState {
@@ -48,8 +49,8 @@ pub enum TandaState {
 /// Your smart contract state.
 // pub struct State {
 //     // Your state
-//     name: String,
-//     description: String,
+// name: String,
+// description: String,
 //     creator: AccountAddress,
 //     members: Vec<AccountAddress>,
 //     amount: u128,
@@ -62,12 +63,18 @@ pub enum TandaState {
 // }
 #[derive(Debug, Serialize, SchemaType, Clone)]
 pub struct State {
+    /// The name of the Tanda or Osusu club
+    name: String,
+    /// A brief description of the Tanda club
+    description: String,
     /// State of the Tanda
     tanda_state: TandaState,
     /// The list of members who have joined the Tanda
-    members: Vec<(AccountAddress, u64)>,
+    members: Option<Vec<(AccountAddress, u64)>>,
     /// The amount of money each member contributes to the Tanda
     contribution_amount: u64,
+    /// The penalty amount to paid in addition to the contribution amount.
+    penalty_amount: u64,
     /// The total amount of contributions made by all members
     total_contributions: u64,
     /// The payout cycle for the Tanda
@@ -80,6 +87,12 @@ pub struct State {
     end_time: Timestamp,
     /// The member who is next in line to receive a payout
     next_receiver: Option<AccountAddress>,
+    /// The list of accounts that have received payment after every cycle
+    completed_cycles: Vec<(u64, Vec<AccountAddress>)>,
+    /// The list of accounts that have made a contribution to the tanda
+    contributors: BTreeSet<AccountAddress>,
+    /// The maximum number of members allowed.
+    max_contributors: u64,
 }
 /// Your smart contract errors.
 #[derive(Debug, PartialEq, Eq, Reject, Serial, SchemaType)]
@@ -91,7 +104,6 @@ enum Error {
     YourError,
 }
 
-#[derive(Serialize, SchemaType, Clone)]
 // struct InitParameter {
 //     name: String,
 //     description: String,
@@ -101,8 +113,13 @@ enum Error {
 //     max_members: u32,
 //     time_interval: Timestamp,
 // }
+#[derive(Serialize, SchemaType, Clone)]
 
 struct InitParameter {
+    /// The name of the Tanda or Osusu club
+    name: String,
+    /// A brief description of the Tanda club
+    description: String,
     /// The amount of money each member contributes to the Tanda
     contribution_amount: u64,
     /// The payout cycle for the Tanda
@@ -113,25 +130,55 @@ struct InitParameter {
     end_time: Timestamp,
     /// The penalty amount for missed payments
     penalty_amount: u64,
+    /// The maximum number of members allowed.
+    max_contributors: u64,
+}
+
+/// The event is logged when a new (or replacement) vote is cast by an account.
+#[derive(Debug, Serialize, SchemaType)]
+pub struct TandaEvent {
+    /// The account that joined the Tanda.
+    user: AccountAddress,
+}
+
+/// The event logged by this smart contract.
+#[derive(Debug, Serial, SchemaType)]
+pub enum Event {
+    /// The event is logged when a new (or replacement) vote is cast by an
+    /// account.
+    Join(TandaEvent),
 }
 
 /// Init function that creates a new smart contract.
 #[init(contract = "dthrift", parameter = "InitParameter")]
-fn init<S: HasStateApi>(
+fn tanda_init<S: HasStateApi>(
     ctx: &impl HasInitContext,
-    _state_builder: &mut StateBuilder<S>,
+    state_builder: &mut StateBuilder<S>,
 ) -> InitResult<State> {
     // Your code
     let param: InitParameter = ctx.parameter_cursor().get()?;
-    let acc = match ctx.sender() {
-        Address::Account(acc) => acc,
-        Address::Contract(_) => return Err(ContractError::ContractVoter),
-    };
+    // let acc = match ctx.sender() {
+    //     Address::Account(acc) => acc,
+    //     Address::Contract(_) => return Err(ContractError::ContractVoter),
+    // };
 
     Ok(State {
         name: param.name,
         description: param.description,
-        creator: acc,
+        // creator: acc,
+        tanda_state: TandaState::Open,
+        members: None,
+        contribution_amount: param.contribution_amount,
+        penalty_amount: param.penalty_amount,
+        total_contributions: 0,
+        payout_cycle: param.payout_cycle,
+        current_cycle: 0,
+        start_time: param.start_time,
+        end_time: param.end_time,
+        next_receiver: None,
+        completed_cycles: vec![],
+        contributors: BTreeSet::new(),
+        max_contributors: param.max_contributors,
     })
 }
 
