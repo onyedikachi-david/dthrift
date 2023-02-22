@@ -32,7 +32,7 @@ use concordium_std::*;
 use core::fmt::Debug;
 use std::collections::BTreeSet;
 
-#[derive(Serialize, SchemaType, Clone, Copy, Debug)]
+#[derive(Serialize, SchemaType, Clone, Copy, Debug, PartialEq)]
 pub enum TandaState {
     /// The Tanda is accepting new members.
     Open,
@@ -61,7 +61,7 @@ pub enum TandaState {
 //     time_interval: Timestamp,
 //     end_time: Timestamp,
 // }
-#[derive(Debug, Serialize, SchemaType, Clone)]
+#[derive(Debug, Serialize, SchemaType, Clone, PartialEq)]
 pub struct State {
     /// The name of the Tanda or Osusu club
     name: String,
@@ -69,6 +69,8 @@ pub struct State {
     description: String,
     /// State of the Tanda
     tanda_state: TandaState,
+    /// The creator of the Tanda club address
+    creator: AccountAddress,
     /// The list of members who have joined the Tanda
     members: Option<Vec<(AccountAddress, u64)>>,
     /// The amount of money each member contributes to the Tanda
@@ -93,6 +95,8 @@ pub struct State {
     contributors: BTreeSet<AccountAddress>,
     /// The maximum number of members allowed.
     max_contributors: u64,
+    /// Index of users of members, just used to increment the member attribute index
+    user_index: u64,
 }
 /// Your smart contract errors.
 #[derive(Debug, PartialEq, Eq, Reject, Serial, SchemaType)]
@@ -100,8 +104,13 @@ enum Error {
     /// Failed parsing the parameter.
     #[from(ParseError)]
     ParseParamsError,
-    /// Your error
-    YourError,
+    /// Raised when the club is closed.
+    TandaClosed,
+    /// Raised when the club has reached its maximum member limit
+    MaximumReached,
+    /// Raised when a smart contract tries to join a club.
+    /// Only account are allowed to join a club.
+    ContractMember,
 }
 
 // struct InitParameter {
@@ -114,12 +123,13 @@ enum Error {
 //     time_interval: Timestamp,
 // }
 #[derive(Serialize, SchemaType, Clone)]
-
 struct InitParameter {
     /// The name of the Tanda or Osusu club
     name: String,
     /// A brief description of the Tanda club
     description: String,
+    /// The creator of the Tanda club address
+    creator: AccountAddress,
     /// The amount of money each member contributes to the Tanda
     contribution_amount: u64,
     /// The payout cycle for the Tanda
@@ -132,6 +142,11 @@ struct InitParameter {
     penalty_amount: u64,
     /// The maximum number of members allowed.
     max_contributors: u64,
+}
+
+#[derive(Serialize, SchemaType, Clone)]
+pub struct JoinTandaParameter {
+    penalty_amount: u64,
 }
 
 /// The event is logged when a new (or replacement) vote is cast by an account.
@@ -149,11 +164,14 @@ pub enum Event {
     Join(TandaEvent),
 }
 
-/// Init function that creates a new smart contract.
+// Contract functions
+/// Initialize the contract instance and start the Tanda.
+/// A description, and other variables specified in the init struct`
+/// have to be provided.
 #[init(contract = "dthrift", parameter = "InitParameter")]
 fn tanda_init<S: HasStateApi>(
     ctx: &impl HasInitContext,
-    state_builder: &mut StateBuilder<S>,
+    _state_builder: &mut StateBuilder<S>,
 ) -> InitResult<State> {
     // Your code
     let param: InitParameter = ctx.parameter_cursor().get()?;
@@ -161,11 +179,12 @@ fn tanda_init<S: HasStateApi>(
     //     Address::Account(acc) => acc,
     //     Address::Contract(_) => return Err(ContractError::ContractVoter),
     // };
+    let account = ctx.init_origin();
 
     Ok(State {
         name: param.name,
         description: param.description,
-        // creator: acc,
+        creator: account,
         tanda_state: TandaState::Open,
         members: None,
         contribution_amount: param.contribution_amount,
@@ -179,32 +198,81 @@ fn tanda_init<S: HasStateApi>(
         completed_cycles: vec![],
         contributors: BTreeSet::new(),
         max_contributors: param.max_contributors,
+        user_index: 0,
     })
 }
 
-/// Receive function. The input parameter is the boolean variable `throw_error`.
-///  If `throw_error == true`, the receive function will throw a custom error.
-///  If `throw_error == false`, the receive function executes successfully.
+/// Enables a qualified user to join a Tanda club and pay penalty fee.
+///
+/// It fails if:
+/// - It fails to parse the parameter.
+/// - A contract tries to vote.
+/// - The Tanda club has reached its maximum limit.
+/// - The Tanda state is closed.
 #[receive(
     contract = "dthrift",
-    name = "receive",
-    parameter = "bool",
+    name = "joinTanda",
+    parameter = "JoinTandaParameter",
     error = "Error",
-    mutable
+    mutable,
+    enable_logger,
+    payable
 )]
-fn receive<S: HasStateApi>(
+fn join_tanda<S: HasStateApi>(
     ctx: &impl HasReceiveContext,
-    _host: &mut impl HasHost<State, StateApiType = S>,
+    host: &mut impl HasHost<State, StateApiType = S>,
+    amount: Amount,
+    logger: &mut impl HasLogger,
+    // penalty_amount: Amount,
 ) -> Result<(), Error> {
-    // Your code
+    // let parameter = ctx.parameter_cursor().get()?;
+    // Check that the Tanda is still open
+    ensure!(
+        host.state().tanda_state != TandaState::Closed,
+        Error::TandaClosed
+    );
 
-    let throw_error = ctx.parameter_cursor().get()?; // Returns Error::ParseError on failure
-    if throw_error {
-        Err(Error::YourError)
+    // Check if the Tanda has reached its maximum limit.
+    let members = &mut host.state().members.as_ref().map_or(0, |v| v.len());
+    ensure!(
+        *members as u64 == host.state().max_contributors,
+        Error::MaximumReached
+    );
+
+    // Ensure that the sender is an account
+    let acc = match ctx.sender() {
+        Address::Account(acc) => acc,
+        Address::Contract(_) => return Err(Error::ContractMember),
+    };
+
+    // Update penalty_amount
+    let param: JoinTandaParameter = ctx.parameter_cursor().get()?;
+    let penalty_amount = param.penalty_amount;
+    host.state_mut().penalty_amount += penalty_amount;
+
+    // Update the user_index count
+    // let new_user_index = host.state_mut().user_index += 1;
+
+    let new_user_index = host.state_mut().user_index + 1;
+    host.state_mut().user_index = new_user_index;
+
+    // Update the members list
+    let new_user_address = acc;
+
+    let new_member = (new_user_address, new_user_index);
+    if let Some(mut members) = host.state_mut().members.take() {
+        members.push(new_member);
+        host.state_mut().members = Some(members.to_vec());
     } else {
-        Ok(())
+        host.state_mut().members = Some(vec![new_member]);
     }
+
+    //
+
+    Ok(())
 }
+
+
 
 /// View function that returns the content of the state.
 #[receive(contract = "dthrift", name = "view", return_value = "State")]
