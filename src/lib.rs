@@ -74,9 +74,9 @@ pub struct State {
     /// The list of members who have joined the Tanda
     members: Option<Vec<(AccountAddress, u64)>>,
     /// The amount of money each member contributes to the Tanda
-    contribution_amount: u64,
+    contribution_amount: Amount,
     /// The penalty amount to paid in addition to the contribution amount.
-    penalty_amount: u64,
+    penalty_amount: Amount,
     /// The total amount of contributions made by all members
     total_contributions: u64,
     /// The payout cycle for the Tanda
@@ -87,6 +87,8 @@ pub struct State {
     start_time: Timestamp,
     /// The time when the Tanda will be finalized
     end_time: Timestamp,
+    /// Payment interval for the Tanda club.
+    time_interval: Timestamp,
     /// The member who is next in line to receive a payout
     next_receiver: Option<AccountAddress>,
     /// The list of accounts that have received payment after every cycle
@@ -111,6 +113,54 @@ enum Error {
     /// Raised when a smart contract tries to join a club.
     /// Only account are allowed to join a club.
     ContractMember,
+    /// The account is not authorized to perform the operation.
+    Unauthorized,
+    /// The Tanda club is already finalized.
+    AlreadyFinalized,
+    /// The Tanda club has not started yet.
+    NotStarted,
+    /// The Tanda club has already started.
+    AlreadyStarted,
+    /// The Tanda club is already finished.
+    AlreadyFinished,
+    /// The Tanda club has already been joined by the member.
+    AlreadyJoined,
+    /// The Tanda club is full and cannot accept new members.
+    TandaFull,
+    /// The member has not joined the Tanda club.
+    NotJoined,
+    /// The member has already made a contribution for the current cycle.
+    AlreadyContributed,
+    /// The member has missed the contribution deadline and has been penalized.
+    Penalized,
+    /// The contribution amount is invalid (e.g., zero or negative).
+    InvalidContributionAmount,
+    /// The payout cycle is invalid (e.g., zero or negative).
+    InvalidPayoutCycle,
+    /// The start time is invalid or in the past.
+    InvalidStartTime,
+    /// The end time is invalid or before the start time.
+    InvalidEndTime,
+    /// The time interval is invalid (e.g., zero or negative).
+    InvalidTimeInterval,
+    /// The penalty amount is invalid (e.g., zero or negative).
+    InvalidPenaltyAmount,
+    /// The maximum number of members is invalid (e.g., zero or negative).
+    InvalidMaxContributors,
+    /// The Tanda club name is invalid (e.g., empty or too long).
+    InvalidName,
+    /// The Tanda club description is invalid (e.g., empty or too long).
+    InvalidDescription,
+    /// The Tanda club creator is invalid (e.g., invalid account address).
+    InvalidCreator,
+    /// The Tanda club address is invalid (e.g., invalid account address).
+    InvalidAddress,
+    /// The amount to withdraw exceeds the Tanda pot.
+    InsufficientBalance,
+    /// The input parameter is invalid.
+    InvalidParameter,
+    /// An internal error occurred.
+    InternalError,
 }
 
 // struct InitParameter {
@@ -122,7 +172,7 @@ enum Error {
 //     max_members: u32,
 //     time_interval: Timestamp,
 // }
-#[derive(Serialize, SchemaType, Clone)]
+#[derive(Serialize, SchemaType, Clone, PartialEq)]
 struct InitParameter {
     /// The name of the Tanda or Osusu club
     name: String,
@@ -131,20 +181,22 @@ struct InitParameter {
     /// The creator of the Tanda club address
     creator: AccountAddress,
     /// The amount of money each member contributes to the Tanda
-    contribution_amount: u64,
+    contribution_amount: Amount,
     /// The payout cycle for the Tanda
     payout_cycle: u64,
     /// The time when the Tanda will start using the RFC 3339 format (https://tools.ietf.org/html/rfc3339)
     start_time: Timestamp,
     /// The time when the Tanda will be finalized using the RFC 3339 format (https://tools.ietf.org/html/rfc3339)
     end_time: Timestamp,
+    /// Payment interval for the Tanda club.
+    time_interval: Timestamp,
     /// The penalty amount for missed payments
-    penalty_amount: u64,
+    penalty_amount: Amount,
     /// The maximum number of members allowed.
     max_contributors: u64,
 }
 
-#[derive(Serialize, SchemaType, Clone)]
+#[derive(Serialize, SchemaType, Clone, PartialEq)]
 pub struct JoinTandaParameter {
     penalty_amount: u64,
 }
@@ -173,12 +225,8 @@ fn tanda_init<S: HasStateApi>(
     ctx: &impl HasInitContext,
     _state_builder: &mut StateBuilder<S>,
 ) -> InitResult<State> {
-    // Your code
     let param: InitParameter = ctx.parameter_cursor().get()?;
-    // let acc = match ctx.sender() {
-    //     Address::Account(acc) => acc,
-    //     Address::Contract(_) => return Err(ContractError::ContractVoter),
-    // };
+
     let account = ctx.init_origin();
 
     Ok(State {
@@ -194,6 +242,7 @@ fn tanda_init<S: HasStateApi>(
         current_cycle: 0,
         start_time: param.start_time,
         end_time: param.end_time,
+        time_interval: param.time_interval,
         next_receiver: None,
         completed_cycles: vec![],
         contributors: BTreeSet::new(),
@@ -203,12 +252,24 @@ fn tanda_init<S: HasStateApi>(
 }
 
 /// Enables a qualified user to join a Tanda club and pay penalty fee.
+/// Adds a new member to the Tanda club and associates their address with a unique user index.
+/// The user index is incremented each time a new member is added. If the maximum number of
+/// contributors has already been reached, the function returns an error.
 ///
-/// It fails if:
+/// # Arguments
+///
+/// * ctx - The context of the current transaction.
+/// * amount - The penalty amount.
+///
+/// # Errors
+///
+/// Returns an error if:
 /// - It fails to parse the parameter.
 /// - A contract tries to vote.
 /// - The Tanda club has reached its maximum limit.
 /// - The Tanda state is closed.
+/// * The maximum number of contributors has already been reached.
+///
 #[receive(
     contract = "dthrift",
     name = "joinTanda",
@@ -223,14 +284,22 @@ fn join_tanda<S: HasStateApi>(
     host: &mut impl HasHost<State, StateApiType = S>,
     amount: Amount,
     logger: &mut impl HasLogger,
-    // penalty_amount: Amount,
 ) -> Result<(), Error> {
-    // let parameter = ctx.parameter_cursor().get()?;
     // Check that the Tanda is still open
     ensure!(
         host.state().tanda_state != TandaState::Closed,
         Error::TandaClosed
     );
+
+    // Check if the Tanda is still open for new members to join.
+    if host.state().end_time <= ctx.metadata().slot_time() {
+        return Err(Error::TandaClosed);
+    }
+
+    // Check if the Tanda is not yet initialized.
+    if host.state().start_time > ctx.metadata().slot_time() {
+        return Err(Error::NotStarted);
+    }
 
     // Check if the Tanda has reached its maximum limit.
     let members = &mut host.state().members.as_ref().map_or(0, |v| v.len());
@@ -238,6 +307,19 @@ fn join_tanda<S: HasStateApi>(
         *members as u64 == host.state().max_contributors,
         Error::MaximumReached
     );
+
+    // Check if the contributor has already joined the Tanda.
+    let contributor_address = ctx.invoker();
+    if let Some(members) = &host.state().members {
+        if members.iter().any(|(addr, _)| addr == &contributor_address) {
+            return Err(Error::AlreadyJoined);
+        }
+    }
+
+    // Check if the penalty amount is valid
+    if amount != host.state().penalty_amount {
+        return Err(Error::InvalidPenaltyAmount);
+    }
 
     // Ensure that the sender is an account
     let acc = match ctx.sender() {
@@ -248,11 +330,11 @@ fn join_tanda<S: HasStateApi>(
     // Update penalty_amount
     let param: JoinTandaParameter = ctx.parameter_cursor().get()?;
     let penalty_amount = param.penalty_amount;
-    host.state_mut().penalty_amount += penalty_amount;
+    host.state_mut().penalty_amount += concordium_std::Amount {
+        micro_ccd: penalty_amount,
+    };
 
     // Update the user_index count
-    // let new_user_index = host.state_mut().user_index += 1;
-
     let new_user_index = host.state_mut().user_index + 1;
     host.state_mut().user_index = new_user_index;
 
@@ -272,7 +354,144 @@ fn join_tanda<S: HasStateApi>(
     Ok(())
 }
 
+/// This function allows a member to contribute to the Tanda club.
+/// The function checks that the member has already joined the
+/// Tanda club, and the Tanda club is still open. If these
+/// conditions are met, the function adds the contribution
+/// amount to the total contributions, updates the member's
+/// contribution, and schedules the next receiver of the Tanda payout.
+///
+/// # Arguments
+///
+/// * `ctx` - The context object that provides access to the current state and other data.
+/// * `amount` - The amount of the contribution made by the member.
+///
+/// # Errors
+///
+/// This function will return an error if:
+///
+/// * The Tanda club is already closed.
+/// * The maximum number of members has already been reached.
+/// * The member has already joined the Tanda club.
+/// * The contribution amount is less than the minimum required amount.
+///
+#[receive(
+    contract = "dthrift",
+    name = "contribute",
+    parameter = "ContributeParameter",
+    enable_logger,
+    mutable,
+    error = "Error",
+    payable
+)]
+fn contribute<S: HasStateApi>(
+    ctx: &impl HasReceiveContext,
+    host: &mut impl HasHost<State, StateApiType = S>,
+    amount: Amount,
+    logger: &mut impl HasLogger,
+) -> Result<(), Error> {
+    // Check that the contribution amount is greater than zero
+    if amount <= (concordium_std::Amount { micro_ccd: 0 }) {
+        return Err(Error::InvalidContributionAmount);
+    }
 
+    // Check that the contribution amount is equal to the set contribution amount
+    let expected_contribution = host.state().contribution_amount;
+    if amount != expected_contribution {
+        return Err(Error::InvalidContributionAmount);
+    }
+
+    // Get the current time
+    let current_time = ctx.metadata().slot_time();
+
+    // Check that contributions are still allowed
+    let start_time = host.state().start_time;
+    if current_time < start_time {
+        return Err(Error::NotStarted);
+    }
+
+    let end_time = host.state().end_time;
+    if current_time > end_time {
+        return Err(Error::TandaClosed);
+    }
+
+    // Check if the club is still open
+    ensure!(
+        host.state().tanda_state != TandaState::Closed,
+        Error::TandaClosed
+    );
+
+    // Check that we haven't gotten to the end_time. If we have change the state to closed.
+
+    // What if it is interval time?
+
+    // Ensure that the sender is an account
+    let acc = match ctx.sender() {
+        Address::Account(acc) => acc,
+        Address::Contract(_) => return Err(Error::ContractMember),
+    };
+
+    // Ensure that the address/account is a member; should join first+
+    let sender_address = ctx.invoker();
+    let existing_members = host.state_mut().members.take().unwrap_or_default();
+    if existing_members
+        .iter()
+        .any(|(address, _)| address == &sender_address)
+    {
+        return Err(Error::NotJoined);
+    }
+
+    // Add to contributors set
+    let mut contributors = host.state_mut().contributors.insert(sender_address);
+    // contributors.insert(sender_address);
+    // host.state_mut().contributors = Some(contributors);
+
+    Ok(())
+}
+
+/// Withdraws the current pot for the Tanda club.
+///
+/// # Arguments
+///
+/// * `ctx` - The context of the transaction.
+///
+/// # Errors
+///
+/// * `MemberNotFound` - When the account attempting to withdraw is not a member of the Tanda club.
+/// * `TandaClosed` - When the Tanda club is not open for withdrawals.
+///
+#[receive(
+    contract = "dthrift",
+    name = "withdraw",
+    parameter = "WithdrawParameter",
+    enable_logger,
+    mutable,
+    error = "Error",
+    payable
+)]
+fn withdraw<S: HasStateApi>(
+    ctx: &impl HasReceiveContext,
+    host: &mut impl HasHost<State, StateApiType = S>,
+    amount: Amount,
+    logger: &mut impl HasLogger,
+) -> Result<(), Error> {
+    // Check if the club is closed
+
+    // Ensure that the sender is an account
+
+    // Ensure that the address/account is a member
+
+    // Ensure that the address hasn't gotten payed before
+
+    // Add to contributors set
+    Ok(())
+}
+
+
+// Start withdrawal phase
+
+
+// Start a new contribution phase
 
 /// View function that returns the content of the state.
 #[receive(contract = "dthrift", name = "view", return_value = "State")]
