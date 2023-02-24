@@ -31,6 +31,7 @@
 use concordium_std::{Duration, *};
 use core::fmt::Debug;
 use std::{collections::BTreeSet, ops::Add, time::Duration as STDDuration};
+// use chrono::{DateTime, Duration, Utc};
 
 #[derive(Serialize, SchemaType, Clone, Copy, Debug, PartialEq)]
 pub enum TandaState {
@@ -99,6 +100,12 @@ pub struct State {
     contributors: BTreeSet<AccountAddress>,
     /// List of address that has withdrwan from the pot.
     withdrawn_addresses: BTreeSet<AccountAddress>,
+    /// Withdrawal phase status
+    withdrawal_phase_started: bool,
+    /// The next withdrawal time.
+    next_withdrawal_time: Timestamp,
+    /// When withdrawal should start
+    withdrawal_start_time: Timestamp,
     /// The maximum number of members allowed.
     max_contributors: u64,
     /// Index of users of members, just used to increment the member attribute index
@@ -116,14 +123,20 @@ enum Error {
     MaximumReached,
     /// Raised when an attempt is made to withdraw before the withdrawal time window.
     WithdrawalTimeNotReached,
+    /// Raised when an attempt is made to start withdrawal phase when it's on already
+    WithdrawalPhaseAlreadyStarted,
     /// Only account are allowed to join a club.
     ContractMember,
+    /// Raised when the the total contributors isn't up to max_contibutors
+    ContributorsNotComplete,
     /// The account is not authorized to perform the operation.
     Unauthorized,
     /// The Tanda club is already finalized.
     AlreadyFinalized,
     /// The Tanda club has not started yet.
     NotStarted,
+    /// You are not Authorized to call this function.
+    NotAuthorized,
     /// The Tanda club has already started.
     AlreadyStarted,
     /// The Tanda club is already finished.
@@ -142,6 +155,10 @@ enum Error {
     NotContributor,
     /// The member has missed the contribution deadline and has been penalized.
     Penalized,
+    /// Raises when withdraw attempt is made before the interval.
+    WithdrawalIntervalNotReached,
+    /// The state is Invalid
+    InvalidState,
     /// The contribution amount is invalid (e.g., zero or negative).
     InvalidContributionAmount,
     /// The payout cycle is invalid (e.g., zero or negative).
@@ -238,6 +255,26 @@ fn tanda_init<S: HasStateApi>(
 
     let account = ctx.init_origin();
 
+    let now = ctx.metadata().slot_time();
+
+    // let duration = Duration::from_millis(param.time_interval);
+
+    // let now.duration_since(host.state().last_withdrawal_time).map_or(false, |dur| dur < host.state().time_interval)
+
+    // let withdrawal_start_time =
+    //     now.duration_since(param.start_time.into()) + param.time_interval.seconds().into() as u64;
+
+    // let withdrawal_start_time = match now.duration_since(param.start_time.into()) {
+    //     Some(duration) => duration + param.time_interval.seconds(),
+    //     None => return Err(Error::InvalidState.into()),
+    // }
+    // .into_timestamp();
+
+    let withdrawal_start_time = now
+        .checked_add(param.time_interval.into())
+        .ok_or(Error::InvalidState)?;
+    // let test_duration = Duration::
+
     Ok(State {
         name: param.name,
         description: param.description,
@@ -252,11 +289,14 @@ fn tanda_init<S: HasStateApi>(
         start_time: param.start_time,
         end_time: param.end_time,
         last_withdrawal_time: Timestamp::from_timestamp_millis(0),
+        next_withdrawal_time: Timestamp::from_timestamp_millis(0),
+        withdrawal_start_time: withdrawal_start_time,
         time_interval: param.time_interval,
         next_receiver: None,
         completed_cycles: vec![],
         contributors: BTreeSet::new(),
         withdrawn_addresses: BTreeSet::new(),
+        withdrawal_phase_started: false,
         max_contributors: param.max_contributors,
         user_index: 0,
     })
@@ -298,7 +338,7 @@ fn join_tanda<S: HasStateApi>(
 ) -> Result<(), Error> {
     // Check that the Tanda is still open
     ensure!(
-        host.state().tanda_state != TandaState::Closed,
+        host.state().tanda_state == TandaState::Open,
         Error::TandaClosed
     );
 
@@ -481,13 +521,11 @@ fn contribute<S: HasStateApi>(
     parameter = "WithdrawParameter",
     enable_logger,
     mutable,
-    error = "Error",
-    payable
+    error = "Error"
 )]
 fn withdraw<S: HasStateApi>(
     ctx: &impl HasReceiveContext,
     host: &mut impl HasHost<State, StateApiType = S>,
-    amount: Amount,
     logger: &mut impl HasLogger,
 ) -> Result<(), Error> {
     // let host = host.state();
@@ -570,7 +608,87 @@ fn withdraw<S: HasStateApi>(
     Ok(())
 }
 
-// A function to Start withdrawal phase
+/// This function starts the withdrawal phase for the Tanda club.
+/// It checks if the Tanda club has reached its maximum number
+/// of members and if all members have made a contribution.
+/// It also checks if the current time is after the withdrawal
+/// interval for the Tanda club. If these conditions are met,
+/// the function changes the state of the Tanda club to Pending,
+/// and schedules the first payout cycle by setting the first
+/// receiver of the payout.
+///
+/// # Arguments
+///
+/// * ctx - The context object that provides access to the current state and other data.
+///
+/// # Errors
+///
+/// This function will return an error if:
+///
+/// * The Tanda club is already closed.
+/// * The maximum number of members has not been reached yet.
+/// * Not all members have made a contribution yet.
+/// * The current time is before the withdrawal interval for the Tanda club.
+#[receive(
+    contract = "dthrift",
+    name = "start_withdrawal_phase",
+    enable_logger,
+    mutable,
+    error = "Error"
+)]
+fn start_withdrawal_phase<S: HasStateApi>(
+    ctx: &impl HasReceiveContext,
+    host: &mut impl HasHost<State, StateApiType = S>,
+    logger: &mut impl HasLogger,
+) -> Result<(), Error> {
+    // Ensure that the caller is the owner of the contract
+    let caller = ctx.sender();
+    let owner = host.state().creator;
+    if caller != concordium_std::Address::Account(owner) {
+        return Err(Error::NotAuthorized);
+    }
+
+    // Ensure that the withdrawal phase has not already started
+    if host.state().withdrawal_phase_started {
+        return Err(Error::WithdrawalPhaseAlreadyStarted);
+    }
+
+    // Ensure all members have contributed.
+    if host.state().contributors.len() != host.state().max_contributors as usize {
+        return Err(Error::ContributorsNotComplete);
+    }
+
+    // Ensure the current time is past the withdrawal interval.
+    let now = ctx.metadata().slot_time();
+    if now < host.state().withdrawal_start_time {
+        return Err(Error::WithdrawalIntervalNotReached);
+    }
+
+    // Ensure the Tanda is in the InProgress state.
+    if host.state().tanda_state != TandaState::InProgress {
+        return Err(Error::InvalidState);
+    }
+
+    // Set the Tanda state to Pending.
+    host.state_mut().tanda_state = TandaState::Pending;
+
+    // set the next_withdrawal_time
+    // let withdrawal_start_time = now
+    //     .checked_add(host.state_mut().time_interval.into())
+    //     .ok_or(Error::InvalidState)?;
+
+    // Calculate the next withdrawal time.
+    let withdrawal_interval: Duration = host.state().time_interval.into();
+    let next_withdrawal_time =
+        host.state().withdrawal_start_time.timestamp_millis() + withdrawal_interval.millis();
+    host.state_mut().next_withdrawal_time = Timestamp::from_timestamp_millis(next_withdrawal_time);
+
+    // Mark the withdrawal phase as started.
+    host.state_mut().withdrawal_phase_started = true;
+    Ok(())
+}
+
+// Withdraw penalty amount
 
 // A function to Start a new contribution phase
 
