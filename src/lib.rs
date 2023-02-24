@@ -28,9 +28,9 @@
 //! deploying a smart contract module and initializing it with the
 //! payout cycle, amount of payout, and other parameters.
 
-use concordium_std::*;
+use concordium_std::{Duration, *};
 use core::fmt::Debug;
-use std::collections::BTreeSet;
+use std::{collections::BTreeSet, ops::Add, time::Duration as STDDuration};
 
 #[derive(Serialize, SchemaType, Clone, Copy, Debug, PartialEq)]
 pub enum TandaState {
@@ -78,7 +78,7 @@ pub struct State {
     /// The penalty amount to paid in addition to the contribution amount.
     penalty_amount: Amount,
     /// The total amount of contributions made by all members
-    total_contributions: u64,
+    total_contributions: Amount,
     /// The payout cycle for the Tanda
     payout_cycle: u64,
     /// The current payout cycle
@@ -88,13 +88,17 @@ pub struct State {
     /// The time when the Tanda will be finalized
     end_time: Timestamp,
     /// Payment interval for the Tanda club.
-    time_interval: Timestamp,
+    time_interval: Duration,
     /// The member who is next in line to receive a payout
     next_receiver: Option<AccountAddress>,
+    /// Last time withdrawal was made
+    last_withdrawal_time: Timestamp,
     /// The list of accounts that have received payment after every cycle
     completed_cycles: Vec<(u64, Vec<AccountAddress>)>,
     /// The list of accounts that have made a contribution to the tanda
     contributors: BTreeSet<AccountAddress>,
+    /// List of address that has withdrwan from the pot.
+    withdrawn_addresses: BTreeSet<AccountAddress>,
     /// The maximum number of members allowed.
     max_contributors: u64,
     /// Index of users of members, just used to increment the member attribute index
@@ -110,7 +114,8 @@ enum Error {
     TandaClosed,
     /// Raised when the club has reached its maximum member limit
     MaximumReached,
-    /// Raised when a smart contract tries to join a club.
+    /// Raised when an attempt is made to withdraw before the withdrawal time window.
+    WithdrawalTimeNotReached,
     /// Only account are allowed to join a club.
     ContractMember,
     /// The account is not authorized to perform the operation.
@@ -131,6 +136,10 @@ enum Error {
     NotJoined,
     /// The member has already made a contribution for the current cycle.
     AlreadyContributed,
+    /// The address has already withdrawn from the box
+    AlreadyWithdrawn,
+    /// The address has not contributed before
+    NotContributor,
     /// The member has missed the contribution deadline and has been penalized.
     Penalized,
     /// The contribution amount is invalid (e.g., zero or negative).
@@ -189,7 +198,7 @@ struct InitParameter {
     /// The time when the Tanda will be finalized using the RFC 3339 format (https://tools.ietf.org/html/rfc3339)
     end_time: Timestamp,
     /// Payment interval for the Tanda club.
-    time_interval: Timestamp,
+    time_interval: Duration,
     /// The penalty amount for missed payments
     penalty_amount: Amount,
     /// The maximum number of members allowed.
@@ -237,15 +246,17 @@ fn tanda_init<S: HasStateApi>(
         members: None,
         contribution_amount: param.contribution_amount,
         penalty_amount: param.penalty_amount,
-        total_contributions: 0,
+        total_contributions: concordium_std::Amount { micro_ccd: 0 },
         payout_cycle: param.payout_cycle,
         current_cycle: 0,
         start_time: param.start_time,
         end_time: param.end_time,
+        last_withdrawal_time: Timestamp::from_timestamp_millis(0),
         time_interval: param.time_interval,
         next_receiver: None,
         completed_cycles: vec![],
         contributors: BTreeSet::new(),
+        withdrawn_addresses: BTreeSet::new(),
         max_contributors: param.max_contributors,
         user_index: 0,
     })
@@ -442,9 +453,13 @@ fn contribute<S: HasStateApi>(
     }
 
     // Add to contributors set
-    let mut contributors = host.state_mut().contributors.insert(sender_address);
+    host.state_mut().contributors.insert(sender_address);
     // contributors.insert(sender_address);
     // host.state_mut().contributors = Some(contributors);
+
+    // Increase the total_contributions
+    let new_total_contributions = host.state_mut().total_contributions + amount;
+    host.state_mut().total_contributions = new_total_contributions;
 
     Ok(())
 }
@@ -475,23 +490,89 @@ fn withdraw<S: HasStateApi>(
     amount: Amount,
     logger: &mut impl HasLogger,
 ) -> Result<(), Error> {
+    // let host = host.state();
+
+    // Get the current time.
+    let now = ctx.metadata().slot_time();
+
+    // Check if the current time is after the end time of the Tanda.
+    if now >= host.state().end_time {
+        return Err(Error::AlreadyFinalized);
+    }
+
+    // Check if the current time is before the next withdrawal time.
+    // let time_since_last_withdrawal = now - host.state().last_withdrawal_time;
+    // if time_since_last_withdrawal < host.state().time_interval {
+    //     return Err(Error::WithdrawalTimeNotReached);
+    // }
+
+    // let now = now;
+    // let time_since_last_withdrawal = now.duration_since(host.state().last_withdrawal_time);
+    // if time_since_last_withdrawal < Some(host.state().time_interval.duration_between(host.state().time_interval)) {
+    //     return Err(Error::WithdrawalTimeNotReached);
+    // }
+
+    // let now = now;
+    // let time_since_last_withdrawal = now.duration_since(host.state().last_withdrawal_time);
+    // if time_since_last_withdrawal < host.state().time_interval {
+    //     return Err(Error::WithdrawalTimeNotReached);
+    // }
+
+    if now
+        .duration_since(host.state().last_withdrawal_time)
+        .map_or(false, |dur| dur < host.state().time_interval)
+    {
+        return Err(Error::WithdrawalTimeNotReached);
+    }
+
     // Check if the club is closed
+    if host.state().tanda_state == TandaState::Closed {
+        return Err(Error::TandaClosed);
+    }
 
     // Ensure that the sender is an account
+    let acc = match ctx.sender() {
+        Address::Account(acc) => acc,
+        Address::Contract(_) => return Err(Error::ContractMember),
+    };
 
-    // Ensure that the address/account is a member
+    // Ensure that the address/account is a member; should join first+
+    let sender_address = ctx.invoker();
+    let existing_members = host.state_mut().members.take().unwrap_or_default();
+    if existing_members
+        .iter()
+        .any(|(address, _)| address == &sender_address)
+    {
+        return Err(Error::NotJoined);
+    }
 
-    // Ensure that the address hasn't gotten payed before
+    // If the address has not contributed, they cannot withdraw
+    if !host.state().contributors.contains(&sender_address) {
+        return Err(Error::NotContributor);
+    }
 
-    // Add to contributors set
+    // Check if the sender has already withdrawn
+    if host.state().withdrawn_addresses.contains(&sender_address) {
+        return Err(Error::AlreadyWithdrawn);
+    }
+
+    // Add to withdrawn set
+    host.state_mut().withdrawn_addresses.insert(sender_address);
+
+    // Send total contribution amount to the address
+
+    let total_contribution = host.state().total_contributions;
+    host.invoke_transfer(&ctx.invoker(), total_contribution)
+        .unwrap_abort();
+
+    // Update the last withdrawal time.
+    host.state_mut().last_withdrawal_time = now;
     Ok(())
 }
 
+// A function to Start withdrawal phase
 
-// Start withdrawal phase
-
-
-// Start a new contribution phase
+// A function to Start a new contribution phase
 
 /// View function that returns the content of the state.
 #[receive(contract = "dthrift", name = "view", return_value = "State")]
