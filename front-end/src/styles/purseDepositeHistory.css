@@ -1,0 +1,62 @@
+.purse-deposite-history-modal {
+  background-color: var(--bunker);
+  padding: 2rem;
+  position: absolute;
+  /* width: 30rem; */
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 1rem;
+  z-index: 5;
+}
+
+.purse-deposite-history-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 1rem;
+  font-weight: 900;
+  margin-bottom: 2rem;
+}
+
+.purse-deposite-history-modal .history-container th {
+  /* text-align: left; */
+  white-space: nowrap;
+  width: calc(100% / 4);
+  margin: 0.5rem 1rem;
+}
+
+.purse-deposite-history-modal .history-container th:first-of-type {
+  margin-left: 0;
+}
+
+.purse-deposite-history-modal .history-container th:last-of-type {
+  margin-right: 0;
+}
+
+.purse-deposite-history-modal .history-container tr {
+  display: flex;
+  justify-content: space-between;
+}
+
+.purse-deposite-history-modal .history-container td {
+  padding: 0.5rem 0;
+  width: calc(100% / 4);
+  margin: 0.5rem 1rem;
+}
+
+.purse-deposite-history-modal .history-container td:first-of-type {
+  margin-left: 0;
+}
+
+.purse-deposite-history-modal .history-container td:last-of-type {
+  margin-right: 0;
+}
+
+.purse-deposite-history-modal .history-container tbody tr {
+  background-color: var(--river-bed);
+  padding: 0 0.5rem;
+  margin: 0.5rem 0;
+  border-radius: 0.2rem;
+  font-size: 0.8rem;
+}

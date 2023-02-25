@@ -1,0 +1,40 @@
+.purse-members-list-modal {
+  background-color: var(--bunker);
+  padding: 2rem;
+  position: absolute;
+  /* width: 30rem; */
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 1rem;
+  z-index: 5;
+}
+
+.purse-members-list-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 1.4rem;
+  font-weight: 900;
+  margin-bottom: 2rem;
+}
+
+.purse-members-list-modal .list-container {
+}
+
+.purse-members-list-modal .list-container .member-container {
+  background-color: var(--river-bed);
+  padding: 0.8rem;
+  margin: 1rem 0;
+  border-radius: 0.2rem;
+  font-size: 0.8rem;
+}
+
+.purse-members-list-modal .list-container .member-container .member {
+  margin-right: 1rem;
+  cursor: default;
+}
+
+.purse-members-list-modal .list-container .member-container .copy-icon {
+  cursor: pointer;
+}

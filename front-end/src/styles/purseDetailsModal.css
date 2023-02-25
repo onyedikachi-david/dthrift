@@ -1,0 +1,91 @@
+.purseModalDetails {
+  background-color: var(--french-gray);
+  color: var(--ebony-clay);
+  padding: 2rem;
+  position: fixed;
+  width: 30rem;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 5;
+}
+
+.purseModalDetails-close-icon {
+  font-size: 1.8rem;
+  cursor: pointer;
+}
+
+.purseModalDetails-body {
+  margin-top: 1.5rem;
+}
+
+.details-container {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: space-between;
+  justify-content: space-between;
+}
+
+.details-container .details {
+  width: 45%;
+  background: #fff;
+  margin: 0.5rem;
+  margin-left: 0;
+  padding: 0.3rem 0.8rem;
+  border-radius: 0.3rem;
+  box-shadow: 0 2px 2px var(--don-juan);
+  color: var(--don-juan);
+}
+
+.puresDetail-key {
+  font-size: 0.8rem;
+  font-weight: 400;
+}
+
+.puresDetail-value {
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.notice-container {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin-top: 1rem;
+}
+
+.notice-container .note-header {
+  margin-bottom: 0.5rem;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #000;
+}
+
+.notice-container .note-text {
+  line-height: 1.5;
+  font-weight: 500;
+  margin-bottom: 1rem;
+}
+.joinPurseButton-container {
+  display: flex;
+  justify-content: flex-end;
+}
+.joinPurseButton {
+  padding: 0.8rem 1.2rem;
+  background: var(--ebony-clay);
+  color: #fff;
+  font-weight: 500;
+  border: 2px solid var(--ebony-clay);
+  border-radius: 0.4rem;
+  margin-left: auto;
+  transition: all ease-in-out 0.3s;
+}
+
+.joinPurseButton:hover {
+  background: transparent;
+  color: var(--ebony-clay);
+}
+
+.closed-purse-notice {
+  color: #f00;
+  font-weight: 500;
+}

@@ -1,0 +1,81 @@
+.home-page {
+  background-color: #644f64;
+  background-image: linear-gradient(315deg, #644f64 0%, #222a3e 74%);
+  min-height: 100vh;
+}
+
+.home-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 6rem;
+}
+
+.home-logo-container {
+  width: 6rem;
+}
+.home-logo {
+  width: 100%;
+}
+.launch-app-link {
+  color: #fff;
+  font-weight: 600;
+}
+
+.home-main {
+  margin-top: 2rem;
+  text-align: center;
+  padding: 0 15%;
+}
+
+.main-header {
+  font-size: 4rem;
+  font-weight: 900;
+  margin-bottom: 2rem;
+}
+
+.first-para,
+.second-para {
+  line-height: 1.5;
+  margin-bottom: 2rem;
+  text-align: center;
+  color: var(--french-gray);
+}
+
+.launch-app-link-btn {
+  text-decoration: none;
+  background-color: var(--silver-tree);
+  padding: 0.8rem 2rem;
+  border-radius: 1rem;
+  color: var(--ebony-clay);
+  font-weight: 800;
+  transition: all ease-in-out 0.3s;
+}
+
+.launch-app-link-btn:hover {
+  padding: 1rem 2.2rem;
+}
+
+.launch-app-icon {
+  vertical-align: bottom;
+  font-weight: 900;
+}
+
+.crypto-icon {
+  position: absolute;
+  font-size: 3rem;
+}
+
+.eth {
+  right: 25%;
+  top: 10%;
+}
+
+.ltc {
+  left: 15%;
+  top: 30%;
+}
+
+.btc {
+  right: 25%;
+}

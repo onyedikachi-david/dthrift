@@ -1,0 +1,8 @@
+.purseCard-enclosing-component {
+  max-height: 75vh;
+  overflow: scroll;
+}
+
+.purseCard-enclosing-component::-webkit-scrollbar {
+  display: none;
+}

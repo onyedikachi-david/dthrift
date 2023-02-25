@@ -1,0 +1,63 @@
+.create-purse {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.purse-image-container {
+  width: 15rem;
+  margin-bottom: 1.5rem;
+}
+
+.purse-image {
+  width: 100%;
+}
+
+.create-purse-text {
+  width: 45%;
+  text-align: center;
+}
+
+.create-purse-text-heading {
+  font-size: 1.5rem;
+  color: var(--silver-tree);
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+.create-purse-text-body {
+  line-height: 1.5;
+  font-size: 0.9rem;
+}
+
+.buttons-group {
+}
+
+.buttons-group button {
+  padding: 0.8rem 1.2rem;
+  border-radius: 0.4rem;
+  margin: 1rem 2rem;
+  background: transparent;
+  border: 1px solid var(--silver-tree);
+  transition: all ease-in-out 0.3s;
+}
+
+.buttons-group .create {
+  color: var(--silver-tree);
+}
+
+.buttons-group .join {
+  background: var(--silver-tree);
+  color: #fff;
+  padding: 0.8rem 1.4rem;
+}
+
+.buttons-group .create:hover {
+  background: var(--silver-tree);
+  color: #fff;
+}
+
+.buttons-group .join:hover {
+  background: transparent;
+  color: var(--silver-tree);
+}

@@ -1,0 +1,47 @@
+.purseCard {
+  background-color: var(--river-bed);
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  /* border: 0.5px solid var(--french-gray); */
+}
+
+.purse-card-header {
+  margin-bottom: 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.purse-id {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: var(--silver-tree);
+}
+
+.status-icon {
+  font-size: 1.5rem;
+}
+
+.open {
+  color: var(--silver-tree);
+}
+
+.closed {
+  color: rgb(212, 30, 30);
+}
+
+.purse-card-body {
+  display: flex;
+  justify-content: space-between;
+}
+.key {
+  color: var(--french-gray);
+  font-weight: 200;
+  font-size: 0.9rem;
+}
+.value {
+  color: #acd6ca;
+  font-weight: bold;
+}

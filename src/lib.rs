@@ -688,7 +688,63 @@ fn start_withdrawal_phase<S: HasStateApi>(
     Ok(())
 }
 
-// Withdraw penalty amount
+/// This function calculates the penalty amount for
+/// withdrawing from the Tanda club before the end
+/// of the contract period. The penalty amount is
+/// calculated based on the amount of time remaining
+/// in the contract and the percentage penalty specified
+/// in the contract parameters.
+///
+/// # Arguments
+///
+/// * ctx - The context object that provides access to the current state and other data.
+/// * amount - The amount of the original contribution made by the member.
+/// * withdraw_time - The time when the member is requesting to withdraw from the Tanda club.
+/// * contract_end_time - The time when the Tanda club contract ends.
+/// * penalty_percentage - The percentage penalty specified in the contract parameters.
+///
+/// # Returns
+///
+/// The function returns the penalty amount calculated based on the time remaining
+/// in the contract, the original contribution amount, and the penalty percentage
+/// specified in the contract parameters.
+///
+/// # Errors
+///
+/// This function will return an error if the withdrawal time is after the contract end time.
+#[receive(
+    contract = "dthrift",
+    name = "withdraw_penalty_amount",
+    enable_logger,
+    mutable,
+    error = "Error"
+)]
+fn withdraw_penalty_amount<S: HasStateApi>(
+    ctx: &impl HasReceiveContext,
+    host: &mut impl HasHost<State, StateApiType = S>,
+    logger: &mut impl HasLogger,
+) -> Result<(), Error> {
+    // Ensure the caller is a Tanda member.
+    let sender_address = ctx.invoker();
+    let existing_members = host.state_mut().members.take().unwrap_or_default();
+    if existing_members
+        .iter()
+        .any(|(address, _)| address == &sender_address)
+    {
+        return Err(Error::NotJoined);
+    }
+
+    // Ensure the member has not already withdrawn their penalty amount.
+    // if host.state().members[&sender_address].penalty_amount == 0 {
+    //     return Err(Error::PenaltyAlreadyWithdrawn);
+    // }
+
+    // Transfer penalty amount to Account
+
+    //
+
+    Ok(())
+}
 
 // A function to Start a new contribution phase
 

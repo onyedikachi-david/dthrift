@@ -1,0 +1,83 @@
+.discussion-container {
+  width: 100%;
+  height: 100%;
+}
+
+.chat-wrapper {
+  width: 100%;
+}
+
+.ce-chat-feed-container {
+  background-color: var(--ebony-clay) !important;
+  padding-bottom: 10rem;
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.ce-chat-feed-container::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.ce-chat-feed-container {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.ce-their-message-sender {
+  color: var(--silver-tree) !important;
+  font-weight: bold !important;
+  font-size: 1.1rem !important;
+  padding-left: 3rem !important;
+}
+
+.ce-message-bubble {
+  color: var(--french-gray) !important;
+  border-radius: .4rem !important;
+}
+
+.ce-my-message-bubble {
+  background-color: var(--corduroy) !important;
+}
+
+.ce-their-message-bubble {
+  background-color: var(--river-bed) !important;
+}
+
+.ce-message-timestamp {
+  color: var(--french-gray) !important;
+  opacity: .1;
+}
+
+.ce-message-date-text {
+  color: var(--french-gray) !important;
+  opacity: .5;
+}
+
+.ce-message-form-container {
+  background-color: var(--french-gray) !important;
+}
+.ql-container {
+  background-color: aliceblue !important;
+}
+.ql-editor > * {
+  color: #000 !important;
+}
+
+#ce-send-message-button {
+  background-color: var(--ebony-clay) !important;
+  /* padding: 1rem !important; */
+}
+.anticon-arrow-up {
+  font-weight: 900;
+  transform: rotate(45deg);
+}
+#ce-ice-breaker {
+  padding-top: 0 !important;
+}
+#ce-ice-breaker-gif {
+  display: none !important
+}
+
+#ce-login-fail-breaker {
+  display: none !important;
+}

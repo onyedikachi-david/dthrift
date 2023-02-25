@@ -1,0 +1,53 @@
+@import "./config.css";
+.wallets-modal {
+  background-color: var(--bunker);
+  padding: 2rem;
+  position: absolute;
+  width: 25rem;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 1rem;
+  z-index: 5;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 1.4rem;
+  margin-bottom: 1rem;
+}
+
+.close-icon:hover {
+  color: #999;
+  cursor: pointer;
+}
+
+.modal-body {
+  display: flex;
+  flex-direction: column;
+}
+
+button {
+  margin: 0.5rem 0;
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border: none;
+}
+
+.modal-footer {
+  margin-top: 1.5rem;
+  text-align: center;
+}
+
+.modal-footer p {
+  color: #999;
+}
+
+.modal-footer a {
+  text-decoration: none;
+  font-size: 0.9rem;
+  margin-top: 0.4rem;
+  color: var(--silver-tree);
+}

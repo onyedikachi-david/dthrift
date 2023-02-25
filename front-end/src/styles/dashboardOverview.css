@@ -1,0 +1,91 @@
+.overview-container {
+  padding: 2rem;
+}
+
+.memebers-chart {
+}
+
+.other-charts {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4rem;
+}
+
+.other-charts .date-created .icon-container,
+.other-charts .members .icon-container,
+.other-charts .total-collateral .icon-container {
+  height: 100%;
+  width: 40%;
+  border-top-left-radius: 0.8rem;
+  border-bottom-left-radius: 0.8rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #fff;
+  font-size: 3.5rem;
+}
+
+.other-charts .date-created .icon-container {
+  background-color: var(--silver-tree);
+}
+
+.other-charts .members .icon-container {
+  background-color: var(--corduroy);
+}
+
+.other-charts .total-collateral .icon-container {
+  background-color: var(--dolphin);
+}
+
+.other-charts .date-created,
+.other-charts .members,
+.other-charts .total-collateral {
+  width: 18rem;
+  background: #fff;
+  border-radius: 0.8rem;
+  color: black;
+  display: flex;
+  align-items: center;
+}
+
+.other-charts .date-created .details-container,
+.other-charts .members .details-container,
+.other-charts .total-collateral .details-container {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.other-charts .date-created .details-container .key,
+.other-charts .members .details-container .key,
+.other-charts .total-collateral .details-container .key {
+  font-weight: 900;
+  color: #000;
+}
+
+.other-charts .date-created .details-container .value,
+.other-charts .members .details-container .value,
+.other-charts .total-collateral .details-container .value {
+  font-weight: 500;
+  color: var(--ebony-clay);
+}
+
+.bento-info {
+  margin-top: 4rem;
+  text-align: center;
+}
+
+.bento-info p {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.bento-info-logo {
+  width: 80px;
+}
+
+.bento-info a {
+  font-weight: 700;
+  color: var(--silver-tree);
+}

@@ -1,0 +1,60 @@
+.purse-actions {
+  padding: 0 1rem;
+}
+.disburse-fund-section,
+.deposite-section {
+  background-color: var(--french-gray);
+  padding: 1.5rem;
+  border-radius: 0.2rem;
+  box-shadow: 0 0.2rem 1rem #000;
+  margin-bottom: 2rem;
+}
+
+.disburse-fund-section .vote-heading,
+.deposite-section .deposite-heading {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: var(--ebony-clay);
+}
+
+.disburse-fund-section .member-wallet-input {
+  padding: 0.4rem;
+  background: transparent;
+  border: 1px solid var(--ebony-clay);
+  border-radius: 0.2rem;
+  min-width: 20rem;
+}
+
+.vote-btn {
+  margin-left: 2rem;
+  padding: 0.4rem 1rem;
+  border-radius: 0.2rem;
+  background: var(--ebony-clay);
+  color: var(--french-gray);
+  font-weight: 700;
+}
+
+.deposite-section .deposite-text {
+  color: #000;
+  margin-bottom: 1rem;
+}
+
+.deposite-section .deposite-btn,
+.deposite-section .deposite-history-btn {
+  padding: 0.8rem 2rem;
+  border-radius: 0.4rem;
+  background: var(--river-bed);
+  color: var(--french-gray);
+  font-weight: 700;
+  transition: all ease-in-out 0.3s;
+}
+
+.deposite-section .deposite-history-btn {
+  margin-left: 2rem;
+}
+
+.deposite-section .deposite-btn:hover,
+.deposite-section .deposite-history-btn:hover {
+  padding: 0.9rem 2.2rem;
+}

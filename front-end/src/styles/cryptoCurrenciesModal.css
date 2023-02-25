@@ -1,0 +1,45 @@
+.modal-container {
+  background: rgba(0, 0, 0, 0.33);
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  backdrop-filter: blur(5px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.currency-modal {
+  padding: 1rem;
+  background-color: var(--ebony-clay);
+  width: 30%;
+  border: 1px solid rgba(198, 196, 203, 0.5);
+  border-radius: 1rem;
+}
+
+.currency-modal .header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.currency-modal .header h3 {
+  font-size: 1.2rem;
+  color: var(--french-gray);
+}
+
+.currency-modal .token-search {
+  margin: 2rem 0;
+  font-size: 0.9rem;
+  border: 1px solid rgba(198, 196, 203, 0.5);
+  outline: none;
+  background: none;
+  padding: 0.8rem;
+  text-overflow: ellipsis;
+  color: #fff;
+  display: block;
+  width: 100%;
+  border-radius: 1rem;
+}

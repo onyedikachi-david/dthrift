@@ -1,0 +1,124 @@
+@import "./config.css";
+
+.dex-wrapper {
+  background-color: rgba(7, 9, 12, 0.7);
+  margin-top: 4rem;
+  border-radius: 1rem;
+  padding: 1rem;
+}
+
+.dex-wrapper h1 {
+  color: var(--french-gray);
+  font-size: 1.2rem;
+  font-weight: bold;
+  margin-bottom: 2rem;
+}
+
+.dex-wrapper .from-section,
+.dex-wrapper .to-section {
+  background-color: rgba(98, 96, 134, 0.5);
+  padding: 2rem;
+  border-radius: 1rem;
+  display: flex;
+  justify-content: space-between;
+  border: 1px solid rgba(198, 196, 203, 0.5);
+}
+
+.dex-wrapper .from-section .token-amount-input,
+.dex-wrapper .to-section .token-amount-input {
+  font-size: 1.5rem;
+  border: none;
+  outline: none;
+  background: none;
+  text-align: right;
+  padding: 0.5rem;
+  text-overflow: ellipsis;
+  color: #fff;
+  min-width: 2rem;
+  margin-left: 2rem;
+}
+
+.dex-wrapper .from-section .token-amount-input::placeholder,
+.dex-wrapper .to-section .token-amount-input::placeholder {
+  color: #fff;
+}
+
+.dex-wrapper .exchange-arrow-container {
+  display: inline-block;
+  padding: 1rem;
+}
+
+.dex-wrapper .exchange-arrow-container .exchange-arrow-icon {
+  font-size: 3rem;
+  font-weight: bolder;
+  color: #fff;
+}
+
+.dex-wrapper .to-section .to-token-address-input,
+.dex-wrapper .from-section select {
+  font-size: 1rem;
+  font-weight: bold;
+  outline: none;
+  background-color: rgba(198, 196, 203, 0.4);
+  border: 1px solid rgba(198, 196, 203, 0.5);
+  color: #fff;
+  padding: 0.5rem 1rem;
+  border-radius: 0.6rem;
+  transition: all 0.3s ease-in-out;
+}
+.dex-wrapper .to-section .to-token-address-input {
+  padding: 0.5rem;
+  font-weight: normal;
+  text-overflow: ellipsis;
+  width: 200%;
+}
+.dex-wrapper .to-section .to-token-address-input::placeholder {
+  color: #aaa;
+}
+.dex-wrapper .from-section select option {
+  color: var(--ebony-clay);
+  background-color: var(--dolphin);
+  font-weight: bold;
+}
+
+.dex-wrapper .swap-btn {
+  display: block;
+  width: 100%;
+  margin-top: 2rem;
+  padding: 1rem;
+  outline: 0;
+  background-color: var(--river-bed);
+  border: 1px solid rgba(198, 196, 203, 0.5);
+  border-radius: 1rem;
+  color: var(--french-gray);
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+@media only screen and (max-width: 768px) {
+  .dex-wrapper {
+    margin-bottom: 5rem;
+    margin-top: 2rem;
+    border-radius: 0.5rem;
+    padding: 0.5rem;
+  }
+
+  .dex-wrapper .from-section,
+  .dex-wrapper .to-section {
+    padding: 1rem;
+  }
+
+  .dex-wrapper .from-section .token-amount-input,
+  .dex-wrapper .to-section .token-amount-input {
+    font-size: 1rem;
+  }
+
+  .dex-wrapper .exchange-arrow-container {
+    display: inline-block;
+    padding: 0.5rem;
+  }
+
+  .dex-wrapper .swap-btn {
+    font-size: 1rem;
+  }
+}

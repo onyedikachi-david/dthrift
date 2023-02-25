@@ -1,0 +1,69 @@
+.purses {
+  margin-top: 2rem;
+}
+.header {
+  margin-bottom: 2rem;
+  position: relative;
+}
+
+.header-text {
+  font-size: 1.8rem;
+  color: var(--silver-tree);
+  font-weight: 900;
+  margin-bottom: 3rem;
+}
+.create-new-purse {
+  color: var(--silver-tree);
+  padding: 0.8rem 1.4rem;
+  position: absolute;
+  right: 0;
+  top: 0;
+  border: 1px solid var(--silver-tree);
+  border-radius: 0.4rem;
+}
+
+.create-new-purse-icon {
+  font-size: 1.2rem;
+  color: var(--silver-tree);
+  vertical-align: bottom;
+  cursor: pointer;
+  transition: all ease-in-out 0.3s;
+  cursor: pointer;
+}
+
+.create-new-purse-icon:hover {
+  color: #fff;
+  background: solid var(--silver-tree);
+}
+
+.purses-nav {
+  display: flex;
+  list-style: none;
+  border-bottom: 1px solid #8ad4be;
+  color: var(--french-gray);
+  padding-bottom: 1rem;
+}
+
+.nav-item {
+  margin-right: 2rem;
+  position: relative;
+  color: #fff;
+  cursor: pointer;
+}
+
+.nav-icon {
+  font-size: 1.2rem;
+  color: var(--silver-tree);
+  vertical-align: bottom;
+}
+
+.active-nav-item:after {
+  content: "";
+  display: block;
+  width: 100%;
+  height: 4px;
+  position: absolute;
+  bottom: -1rem;
+  right: 0px;
+  background-color: var(--silver-tree);
+}

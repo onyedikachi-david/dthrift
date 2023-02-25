@@ -1,0 +1,82 @@
+.create-new-purse-modal {
+  background-color: var(--silver-tree);
+  padding: 2rem;
+  position: absolute;
+  width: 45rem;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 1rem;
+  z-index: 5;
+  color: var(--bunker);
+  border: 1px solid var(--bunker);
+}
+
+.new-purse-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 1.3rem;
+  margin-bottom: 1.5rem;
+  font-weight: 900;
+  padding: 0 0.8rem;
+}
+
+.modal-close-icon:hover {
+  color: #000;
+  cursor: pointer;
+}
+
+.new-purse-modal-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.createNewPurseForm {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.formGroup {
+  width: 50%;
+  padding: 0.5rem;
+  margin-bottom: 1rem;
+  box-sizing: border-box;
+}
+.formGroup label {
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.formGroup input {
+  width: 100%;
+  border: 1px solid var(--river-bed);
+  padding: 0.5rem;
+  border-radius: 0.3rem;
+  background: var(--corduroy);
+  color: #fff;
+}
+
+.formGroup input::placeholder {
+  color: #bbb;
+}
+
+.last-formGroup {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.last-formGroup .totalAmount {
+  color: var(--corduroy);
+  font-weight: 900;
+}
+
+.last-formGroup .create-new-purse-btn {
+  padding: 0.6rem 1.2rem;
+  border: 2px solid var(--corduroy);
+  color: var(--corduroy);
+  font-weight: 900;
+  border-radius: 0.4rem;
+}
