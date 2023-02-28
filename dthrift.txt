@@ -1,0 +1,9 @@
+Module successfully deployed with reference: '5f94154097e35a1c833299aaf9032500bb1241989d0993d44316e99e42a255f7'.
+Module reference 5f94154097e35a1c833299aaf9032500bb1241989d0993d44316e99e42a255f7 was successfully named 'dthrift'.
+
+
+Module reference 437c97aab5d079381feb86c565c5aca4161d3f198a3151fafc618e20057e7b4a was successfully named 'dthrift2'.
+
+
+Contract successfully initialized with address: {"index":3657,"subindex":0}
+Contract address {"index":3657,"subindex":0} was successfully named 'dthrift_instance'.

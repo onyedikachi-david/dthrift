@@ -30,7 +30,8 @@
 
 use concordium_std::{Duration, *};
 use core::fmt::Debug;
-use std::{collections::BTreeSet, ops::Add, time::Duration as STDDuration};
+use std::{collections::BTreeSet,};
+//  ops::Add, time::Duration as STDDuration
 // use chrono::{DateTime, Duration, Utc};
 
 #[derive(Serialize, SchemaType, Clone, Copy, Debug, PartialEq)]
@@ -205,7 +206,7 @@ struct InitParameter {
     /// A brief description of the Tanda club
     description: String,
     /// The creator of the Tanda club address
-    creator: AccountAddress,
+    // creator: AccountAddress,
     /// The amount of money each member contributes to the Tanda
     contribution_amount: Amount,
     /// The payout cycle for the Tanda
@@ -429,7 +430,7 @@ fn join_tanda<S: HasStateApi>(
 #[receive(
     contract = "dthrift",
     name = "contribute",
-    parameter = "ContributeParameter",
+    // parameter = "ContributeParameter",
     enable_logger,
     mutable,
     error = "Error",
@@ -518,7 +519,7 @@ fn contribute<S: HasStateApi>(
 #[receive(
     contract = "dthrift",
     name = "withdraw",
-    parameter = "WithdrawParameter",
+    // parameter = "WithdrawParameter",
     enable_logger,
     mutable,
     error = "Error"

@@ -1,0 +1,11 @@
+{
+  "name": "Testing",
+  "description": "A very long one",
+  "contribution_amount": "100",
+  "payout_cycle": 4,
+  "start_time": "2023-03-01T22:20:35+01:00",
+  "end_time": "2023-04-01T22:20:35+01:00",
+  "time_interval": "14d",
+  "penalty_amount": "10",
+  "max_contributors": 40
+}

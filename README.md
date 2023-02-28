@@ -2,6 +2,11 @@
 
 The Tanda smart contract is a blockchain-based implementation of a traditional financial model commonly known as Tanda, Osusu, or rotating savings and credit association (ROSCA).
 
+## Contract instance and address
+
+- Contract address {"index":3657,"subindex":0} 
+- 'dthrift_instance'.
+
 ## Overview
 
 A Tanda is a group of individuals who agree to contribute a fixed amount of money at regular intervals. Each member of the group takes turns receiving the pooled sum until every member has received it. The Tanda is complete when all members have received their share.
